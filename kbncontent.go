@@ -19,7 +19,8 @@ type VisDesc struct {
 	Doc      map[string]interface{}
 	SoType   string
 	Link     string
-	VisType  string
+	Type     string
+	Title    string
 	IsLegacy bool
 }
 
@@ -40,6 +41,7 @@ func getVisType(doc interface{}, soType string) (string, error) {
 		return visStateType.(string), nil
 	}
 
+	// I think this is the dashboard case
 	if embeddableType, err := jsonpath.Get("$.embeddableConfig.savedVis.type", doc); err == nil {
 		return embeddableType.(string), nil
 	}
@@ -47,28 +49,58 @@ func getVisType(doc interface{}, soType string) (string, error) {
 	return "", nil
 }
 
+func getVisTitle(doc interface{}, soType string) (string, error) {
+	if soType != "visualization" {
+		return "", nil
+	}
+
+	if title, err := jsonpath.Get("$.attributes.title", doc); err == nil {
+		return title.(string), nil
+	}
+
+	if title, err := jsonpath.Get("$.title", doc); err == nil {
+		return title.(string), nil
+	}
+
+	// I think this is the dashboard case
+	if title, err := jsonpath.Get("$.embeddableConfig.savedVis.title", doc); err == nil {
+		return title.(string), nil
+	}
+
+	return "", nil
+}
+
+// Gathers information from within the document and attaches it
+func attachMetaInfo(desc *VisDesc) {
+	if result, err := getVisType(desc.Doc, desc.SoType); err == nil {
+		desc.Type = result
+	}
+
+	if result, err := getVisTitle(desc.Doc, desc.SoType); err == nil {
+		desc.Title = result
+	}
+
+	desc.IsLegacy = isLegacy(desc.Type, desc.SoType)
+}
+
 // Report information about a visualization saved object (unmarshalled JSON)
 // Supports maps, saved searches, Lens, Vega, and legacy visualizations
 func DescribeVisualizationSavedObject(doc map[string]interface{}) (VisDesc, error) {
 	soType := doc["type"].(string)
 
-	var visType string
-
-	if result, err := getVisType(doc, soType); err == nil {
-		visType = result
+	desc := VisDesc{
+		Doc:    doc,
+		SoType: soType,
+		Link:   "by_reference",
 	}
 
-	return VisDesc{
-		Doc:      doc,
-		SoType:   soType,
-		Link:     "by_reference",
-		VisType:  visType,
-		IsLegacy: isLegacy(soType, visType),
-	}, nil
+	attachMetaInfo(&desc)
+
+	return desc, nil
 }
 
 // Given a dashboard state (unmarshalled JSON), report information about the by-value panels
-func DescribeByValueDashboardPanels(panelsJSON interface{}) (panelInfos []VisDesc, err error) {
+func DescribeByValueDashboardPanels(panelsJSON interface{}) (visDescriptions []VisDesc, err error) {
 	var panels []interface{}
 	switch panelsJSON.(type) {
 	case string:
@@ -77,50 +109,35 @@ func DescribeByValueDashboardPanels(panelsJSON interface{}) (panelInfos []VisDes
 		panels = panelsJSON.([]interface{})
 	}
 	for _, panel := range panels {
-		panelMap := panel.(map[string]interface{})
+		panelTypeJSON, err := jsonpath.Get("$.type", panel)
 
-		switch panelType := panelMap["type"].(type) {
-		default:
-			// No op. There is no panel type, so this is by-reference.
+		if err != nil {
+			// no type, so by-reference
+			continue
+		}
 
-		case string:
-			switch panelType {
-			case "visualization":
-				embeddableConfig := panelMap["embeddableConfig"].(map[string]interface{})
-				if _, ok := embeddableConfig["savedVis"]; ok {
-					var visType string
+		panelType := panelTypeJSON.(string)
 
-					if result, err := getVisType(panelMap, panelType); err == nil {
-						visType = result
-					}
+		// TODO - I ported these checks from JS, but I am not sure if they are necessary
+		// also, note that this logic needs to change to support saved searches whenever they become by-value
+		filterOut := true
+		if _, err := jsonpath.Get("$.embeddableConfig.savedVis", panel); err == nil && panelType == "visualization" {
+			filterOut = false
+		}
 
-					panelInfos = append(panelInfos, VisDesc{
-						Doc:      panelMap,
-						SoType:   panelType,
-						Link:     "by_value",
-						VisType:  visType,
-						IsLegacy: isLegacy(panelType, visType),
-					})
-				}
-			case "lens", "map":
-				embeddableConfig := panelMap["embeddableConfig"].(map[string]interface{})
-				if _, ok := embeddableConfig["attributes"]; ok {
-					var visType string
+		if _, err := jsonpath.Get("$.embeddableConfig.attributes", panel); err == nil && panelType == "lens" || panelType == "map" {
+			filterOut = false
+		}
 
-					if result, err := getVisType(panelMap, panelType); err == nil {
-						visType = result
-					}
-
-					panelInfos = append(panelInfos, VisDesc{
-						Doc:      panelMap,
-						SoType:   panelType,
-						Link:     "by_value",
-						VisType:  visType,
-						IsLegacy: isLegacy(panelType, visType),
-					})
-				}
+		if !filterOut {
+			desc := VisDesc{
+				Doc:    panel.(map[string]interface{}),
+				SoType: panelType,
+				Link:   "by_value",
 			}
+			attachMetaInfo(&desc)
+			visDescriptions = append(visDescriptions, desc)
 		}
 	}
-	return panelInfos, nil
+	return visDescriptions, nil
 }
