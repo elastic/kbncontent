@@ -1,3 +1,7 @@
+// Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+// or more contributor license agreements. Licensed under the Elastic License;
+// you may not use this file except in compliance with the Elastic License.
+
 // Package kbncontent implements routines for analyzing Kibana content.
 //
 // It provides information about Kibana assets and a single source of truth for what things are legacy and should no longer be used.
