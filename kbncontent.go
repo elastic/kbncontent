@@ -80,7 +80,7 @@ func attachMetaInfo(desc *VisDesc) {
 		desc.Title = result
 	}
 
-	desc.IsLegacy = isLegacy(desc.Type, desc.SoType)
+	desc.IsLegacy = isLegacy(desc.SoType, desc.Type)
 }
 
 // Report information about a visualization saved object (unmarshalled JSON)
