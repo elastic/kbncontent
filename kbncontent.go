@@ -5,6 +5,7 @@ package kbncontent
 
 import (
 	"encoding/json"
+
 	"github.com/PaesslerAG/jsonpath"
 )
 
