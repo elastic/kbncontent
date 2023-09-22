@@ -59,10 +59,10 @@ func DescribeVisualizationSavedObject(doc map[string]interface{}) (VisDesc, erro
 	}
 
 	return VisDesc{
-		Doc: doc,
-		SoType: soType,
-		Link: "by_reference",
-		VisType: visType,
+		Doc:      doc,
+		SoType:   soType,
+		Link:     "by_reference",
+		VisType:  visType,
 		IsLegacy: isLegacy(soType, visType),
 	}, nil
 }
