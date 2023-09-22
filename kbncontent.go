@@ -13,9 +13,9 @@ import (
 	"github.com/PaesslerAG/jsonpath"
 )
 
-// A VisInfo describes a visualization.
+// Describes a visualization.
 // In this case, "visualization" means anything which can be embedded in a dashboard.
-type VisInfo struct {
+type VisDesc struct {
 	Doc      map[string]interface{}
 	SoType   string
 	Link     string
@@ -23,13 +23,11 @@ type VisInfo struct {
 	IsLegacy bool
 }
 
-// TODO don't export
-func IsLegacy(soType, visType string) bool {
+func isLegacy(soType, visType string) bool {
 	return soType == "visualization" && visType != "markdown" && visType != "input_control_vis" && visType != "vega"
 }
 
-// TODO don't export
-func GetVisType(doc interface{}, soType string) (string, error) {
+func getVisType(doc interface{}, soType string) (string, error) {
 	if soType != "visualization" {
 		return "", nil
 	}
@@ -49,8 +47,28 @@ func GetVisType(doc interface{}, soType string) (string, error) {
 	return "", nil
 }
 
+// Report information about a visualization saved object (unmarshalled JSON)
+// Supports maps, saved searches, Lens, Vega, and legacy visualizations
+func DescribeVisualizationSavedObject(doc map[string]interface{}) (VisDesc, error) {
+	soType := doc["type"].(string)
+
+	var visType string
+
+	if result, err := getVisType(doc, soType); err == nil {
+		visType = result
+	}
+
+	return VisDesc{
+		Doc: doc,
+		SoType: soType,
+		Link: "by_reference",
+		VisType: visType,
+		IsLegacy: isLegacy(soType, visType),
+	}, nil
+}
+
 // Given a dashboard state (unmarshalled JSON), report information about the by-value panels
-func CollectByValueDashboardPanels(panelsJSON interface{}) (panelInfos []VisInfo, err error) {
+func DescribeByValueDashboardPanels(panelsJSON interface{}) (panelInfos []VisDesc, err error) {
 	var panels []interface{}
 	switch panelsJSON.(type) {
 	case string:
@@ -72,16 +90,16 @@ func CollectByValueDashboardPanels(panelsJSON interface{}) (panelInfos []VisInfo
 				if _, ok := embeddableConfig["savedVis"]; ok {
 					var visType string
 
-					if result, err := GetVisType(panelMap, panelType); err == nil {
+					if result, err := getVisType(panelMap, panelType); err == nil {
 						visType = result
 					}
 
-					panelInfos = append(panelInfos, VisInfo{
+					panelInfos = append(panelInfos, VisDesc{
 						Doc:      panelMap,
 						SoType:   panelType,
 						Link:     "by_value",
 						VisType:  visType,
-						IsLegacy: IsLegacy(panelType, visType),
+						IsLegacy: isLegacy(panelType, visType),
 					})
 				}
 			case "lens", "map":
@@ -89,16 +107,16 @@ func CollectByValueDashboardPanels(panelsJSON interface{}) (panelInfos []VisInfo
 				if _, ok := embeddableConfig["attributes"]; ok {
 					var visType string
 
-					if result, err := GetVisType(panelMap, panelType); err == nil {
+					if result, err := getVisType(panelMap, panelType); err == nil {
 						visType = result
 					}
 
-					panelInfos = append(panelInfos, VisInfo{
+					panelInfos = append(panelInfos, VisDesc{
 						Doc:      panelMap,
 						SoType:   panelType,
 						Link:     "by_value",
 						VisType:  visType,
-						IsLegacy: IsLegacy(panelType, visType),
+						IsLegacy: isLegacy(panelType, visType),
 					})
 				}
 			}
