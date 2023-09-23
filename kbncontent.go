@@ -30,6 +30,11 @@ type VisDesc struct {
 	// this property gives the TSVB sub type (gauge, markdown, etc)
 	TSVBType string
 
+	// meant to be a visualization-editor-agnostic name for what
+	// kind of visualization this actually is (pie, bar, etc)
+	// Note: does not yet support Lens
+	SemanticType string
+
 	Title    string
 	IsLegacy bool
 }
@@ -59,8 +64,12 @@ func getVisType(doc interface{}, soType string) (string, error) {
 	return "", nil
 }
 
+func isTSVB(visType string) bool {
+	return visType == "metrics"
+}
+
 func getTSVBType(doc interface{}, visType string) (string, error) {
-	if visType != "metrics" {
+	if !isTSVB(visType) {
 		return "", nil
 	}
 
@@ -98,7 +107,7 @@ func getVisTitle(doc interface{}, soType string) (string, error) {
 	return "", nil
 }
 
-// Gathers information from within the document and attaches it
+// Attaches domain knowledge as well as information from within the document
 func attachMetaInfo(desc *VisDesc) {
 	if result, err := getVisType(desc.Doc, desc.SoType); err == nil {
 		desc.Type = result
@@ -110,6 +119,12 @@ func attachMetaInfo(desc *VisDesc) {
 
 	if result, err := getTSVBType(desc.Doc, desc.Type); err == nil {
 		desc.TSVBType = result
+	}
+
+	if isTSVB(desc.Type) {
+		desc.SemanticType = desc.TSVBType
+	} else {
+		desc.SemanticType = desc.Type
 	}
 
 	desc.IsLegacy = isLegacy(desc.SoType, desc.Type)
