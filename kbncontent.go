@@ -18,13 +18,13 @@ import (
 // Describes a visualization.
 // In this case, "visualization" means anything which can be embedded in a dashboard.
 type VisDesc struct {
-	Doc      map[string]interface{}
-	SoType   string
-	Link     string
+	Doc    map[string]interface{}
+	SoType string
+	Link   string
 
 	// root-level visualization type
 	// currently empty for Lens
-	Type     string
+	Type string
 
 	// TSVB visualizations are always type "metrics"
 	// this property gives the TSVB sub type (gauge, markdown, etc)
@@ -240,4 +240,9 @@ func DescribeByValueDashboardPanels(panelsJSON interface{}) (visDescriptions []V
 		}
 	}
 	return visDescriptions, nil
+}
+
+func GetDashboardTitle(dashboard interface{}) (string, error) {
+	m := objx.Map(dashboard.(map[string]interface{}))
+	return m.Get("attributes.title").Str(), nil
 }
