@@ -10,7 +10,7 @@ package kbncontent
 import (
 	"encoding/json"
 
-	// TODO - fully replace jsonpath with objx
+	// TODO - consider fully replacing jsonpath with objx
 	"github.com/PaesslerAG/jsonpath"
 	"github.com/stretchr/objx"
 )
@@ -21,7 +21,15 @@ type VisDesc struct {
 	Doc      map[string]interface{}
 	SoType   string
 	Link     string
+
+	// root-level visualization type
+	// currently empty for Lens
 	Type     string
+
+	// TSVB visualizations are always type "metrics"
+	// this property gives the TSVB sub type (gauge, markdown, etc)
+	TSVBType string
+
 	Title    string
 	IsLegacy bool
 }
@@ -43,7 +51,7 @@ func getVisType(doc interface{}, soType string) (string, error) {
 		return visStateType.(string), nil
 	}
 
-	// I think this is the dashboard case
+	// by-value dashboard case
 	if embeddableType, err := jsonpath.Get("$.embeddableConfig.savedVis.type", doc); err == nil {
 		return embeddableType.(string), nil
 	}
@@ -51,23 +59,24 @@ func getVisType(doc interface{}, soType string) (string, error) {
 	return "", nil
 }
 
-/*
-	func getTSVBType(doc interface, visType string) (string, error) {
-		if visType !== "metrics" {
-			return "", nil
-		}
-
-		if result, err := jsonpath.Get("$.attributes.visState.params.type", doc); err == nil {
-			return result.(string), nil
-		}
-
-		if result, err := jsonpath.Get("$.embeddableConfig.savedVis.params.type", doc); err == nil {
-			return result.(string), nil
-		}
-
+func getTSVBType(doc interface{}, visType string) (string, error) {
+	if visType != "metrics" {
 		return "", nil
 	}
-*/
+
+	// saved object case
+	if result, err := jsonpath.Get("$.attributes.visState.params.type", doc); err == nil {
+		return result.(string), nil
+	}
+
+	// by-value dashboard panel case
+	if result, err := jsonpath.Get("$.embeddableConfig.savedVis.params.type", doc); err == nil {
+		return result.(string), nil
+	}
+
+	return "", nil
+}
+
 func getVisTitle(doc interface{}, soType string) (string, error) {
 	if soType != "visualization" {
 		return "", nil
@@ -81,7 +90,7 @@ func getVisTitle(doc interface{}, soType string) (string, error) {
 		return title.(string), nil
 	}
 
-	// I think this is the dashboard case
+	// by-value dashboard case
 	if title, err := jsonpath.Get("$.embeddableConfig.savedVis.title", doc); err == nil {
 		return title.(string), nil
 	}
@@ -97,6 +106,10 @@ func attachMetaInfo(desc *VisDesc) {
 
 	if result, err := getVisTitle(desc.Doc, desc.SoType); err == nil {
 		desc.Title = result
+	}
+
+	if result, err := getTSVBType(desc.Doc, desc.Type); err == nil {
+		desc.TSVBType = result
 	}
 
 	desc.IsLegacy = isLegacy(desc.SoType, desc.Type)
