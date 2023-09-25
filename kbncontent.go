@@ -19,7 +19,7 @@ import (
 
 // Describes a visualization.
 // In this case, "visualization" means anything which can be embedded in a dashboard.
-type VisDesc struct {
+type VisualizationDescriptor struct {
 	Doc    map[string]interface{}
 	SoType string
 	Link   string
@@ -145,7 +145,7 @@ func getVisTitle(doc interface{}, soType string) (string, error) {
 }
 
 // Attaches domain knowledge as well as information from within the document
-func attachMetaInfo(desc *VisDesc) {
+func attachMetaInfo(desc *VisualizationDescriptor) {
 	if result, err := getVisType(desc.Doc, desc.SoType); err == nil {
 		desc.Type = result
 	}
@@ -221,13 +221,13 @@ func deserializeSubPaths(doc objx.Map) (map[string]interface{}, error) {
 
 // Report information about a visualization saved object (unmarshalled JSON)
 // Supports maps, saved searches, Lens, Vega, and legacy visualizations
-func DescribeVisualizationSavedObject(doc map[string]interface{}) (VisDesc, error) {
+func DescribeVisualizationSavedObject(doc map[string]interface{}) (VisualizationDescriptor, error) {
 	doc = objx.New(doc)
 	deserializeSubPaths(doc)
 
 	soType := doc["type"].(string)
 
-	desc := VisDesc{
+	desc := VisualizationDescriptor{
 		Doc:    doc,
 		SoType: soType,
 		Link:   "by_reference",
@@ -239,7 +239,7 @@ func DescribeVisualizationSavedObject(doc map[string]interface{}) (VisDesc, erro
 }
 
 // Given a dashboard state (unmarshalled JSON), report information about the by-value panels
-func DescribeByValueDashboardPanels(panelsJSON interface{}) (visDescriptions []VisDesc, err error) {
+func DescribeByValueDashboardPanels(panelsJSON interface{}) (visDescriptions []VisualizationDescriptor, err error) {
 	var panels []interface{}
 	switch panelsJSON.(type) {
 	case string:
@@ -269,7 +269,7 @@ func DescribeByValueDashboardPanels(panelsJSON interface{}) (visDescriptions []V
 		}
 
 		if !filterOut {
-			desc := VisDesc{
+			desc := VisualizationDescriptor{
 				Doc:    panel.(map[string]interface{}),
 				SoType: panelType,
 				Link:   "by_value",
