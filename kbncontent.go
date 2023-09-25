@@ -9,6 +9,8 @@ package kbncontent
 
 import (
 	"encoding/json"
+	"errors"
+	"strings"
 
 	// TODO - consider fully replacing jsonpath with objx
 	"github.com/PaesslerAG/jsonpath"
@@ -282,4 +284,47 @@ func DescribeByValueDashboardPanels(panelsJSON interface{}) (visDescriptions []V
 func GetDashboardTitle(dashboard interface{}) (string, error) {
 	m := objx.Map(dashboard.(map[string]interface{}))
 	return m.Get("attributes.title").Str(), nil
+}
+
+// A dashboard reference
+type Reference struct {
+	ID, Type, Name string
+}
+
+func toReferenceSlice(val interface{}) ([]Reference, error) {
+	vals, ok := val.([]interface{})
+	if !ok {
+		return nil, errors.New("conversion error to array")
+	}
+	var refs []Reference
+	for _, v := range vals {
+		r, ok := v.(map[string]interface{})
+		if !ok {
+			return nil, errors.New("conversion error to reference element")
+		}
+		ref := Reference{
+			ID:   r["id"].(string),
+			Type: r["type"].(string),
+			Name: r["name"].(string),
+		}
+
+		refs = append(refs, ref)
+	}
+	return refs, nil
+}
+
+func GetByReferencePanelIDs(dashboard interface{}) ([]string, error) {
+	allReferences, err := toReferenceSlice(dashboard.(map[string]interface{})["references"])
+
+	if err != nil {
+		return nil, err
+	}
+
+	var panelIds []string
+	for _, ref := range allReferences {
+		if strings.Contains(ref.Name, "panel_") {
+			panelIds = append(panelIds, ref.ID)
+		}
+	}
+	return panelIds, nil
 }
