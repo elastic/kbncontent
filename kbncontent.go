@@ -35,12 +35,47 @@ type VisDesc struct {
 	// Note: does not yet support Lens
 	SemanticType string
 
+	// name of the visualization editor
+	Editor string
+
 	Title    string
 	IsLegacy bool
 }
 
 func isLegacy(soType, visType string) bool {
 	return soType == "visualization" && visType != "markdown" && visType != "input_control_vis" && visType != "vega"
+}
+
+func getVisEditor(soType, visType string) string {
+	if soType == "lens" {
+		return "Lens"
+	}
+
+	if soType == "map" {
+		return "Maps"
+	}
+
+	if soType == "search" {
+		return "Discover"
+	}
+
+	if soType == "visualization" {
+		if visType == "metrics" {
+			return "TSVB"
+		}
+
+		if visType == "vega" {
+			return "Vega"
+		}
+
+		if visType == "timelion" {
+			return "Timelion"
+		}
+
+		return "Aggs-based"
+	}
+
+	return "Unknown"
 }
 
 func getVisType(doc interface{}, soType string) (string, error) {
@@ -126,6 +161,8 @@ func attachMetaInfo(desc *VisDesc) {
 	} else {
 		desc.SemanticType = desc.Type
 	}
+
+	desc.Editor = getVisEditor(desc.SoType, desc.Type)
 
 	desc.IsLegacy = isLegacy(desc.SoType, desc.Type)
 }
