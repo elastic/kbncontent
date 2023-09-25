@@ -10,8 +10,8 @@ package kbncontent
 import (
 	"encoding/json"
 	"errors"
-	"strings"
 	"fmt"
+	"strings"
 
 	// TODO - consider fully replacing jsonpath with objx
 	"github.com/PaesslerAG/jsonpath"
@@ -226,7 +226,10 @@ func DescribeVisualizationSavedObject(doc map[string]interface{}) (Visualization
 		return VisualizationDescriptor{}, fmt.Errorf("failed to deserialize embedded JSON objects: %w", err)
 	}
 
-	soType := doc["type"].(string)
+	soType, ok := doc["type"].(string)
+	if !ok {
+		return VisualizationDescriptor{}, errors.New("`type` in visualization is not present or is not a string")
+	}
 
 	desc := VisualizationDescriptor{
 		Doc:    doc,
@@ -244,7 +247,10 @@ func DescribeByValueDashboardPanels(panelsJSON interface{}) (visDescriptions []V
 	var panels []interface{}
 	switch panelsJSON.(type) {
 	case string:
-		json.Unmarshal([]byte(panelsJSON.(string)), &panels)
+		err := json.Unmarshal([]byte(panelsJSON.(string)), &panels)
+		if err != nil {
+			return nil, fmt.Errorf("failed to parse panels JSON: %w", err)
+		}
 	case []interface{}:
 		panels = panelsJSON.([]interface{})
 	}
