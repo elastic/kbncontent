@@ -11,6 +11,7 @@ import (
 	"encoding/json"
 	"errors"
 	"strings"
+	"fmt"
 
 	// TODO - consider fully replacing jsonpath with objx
 	"github.com/PaesslerAG/jsonpath"
@@ -169,26 +170,22 @@ func attachMetaInfo(desc *VisualizationDescriptor) {
 	desc.IsLegacy = isLegacy(desc.SoType, desc.Type)
 }
 
-func deserializeSubPaths(doc objx.Map) (map[string]interface{}, error) {
-	uiState := doc.Get("attributes.uiStateJSON")
-	if uiState.IsStr() {
-		if parsed, err := objx.FromJSON(uiState.Str()); err == nil {
-			doc.Set("attributes.uiStateJSON", parsed)
-		}
+func deserializeSubPaths(doc objx.Map) error {
+	jsonFields := []string{
+		"attributes.uiStateJSON",
+		"attributes.visState",
+		"attributes.kibanaSavedObjectMeta.searchSourceJSON",
 	}
-
-	visState := doc.Get("attributes.visState")
-	if visState.IsStr() {
-		if parsed, err := objx.FromJSON(visState.Str()); err == nil {
-			doc.Set("attributes.visState", parsed)
+	for _, fieldName := range jsonFields {
+		field := doc.Get(fieldName)
+		if !field.IsStr() {
+			continue
 		}
-	}
-
-	searchSource := doc.Get("attributes.kibanaSavedObjectMeta.searchSourceJSON")
-	if searchSource.IsStr() {
-		if parsed, err := objx.FromJSON(searchSource.Str()); err == nil {
-			doc.Set("attributes.kibanaSavedObjectMeta.searchSourceJSON", parsed)
+		parsed, err := objx.FromJSON(field.Str())
+		if err != nil {
+			return fmt.Errorf("failed to decode embedded json in %q: %w", fieldName, err)
 		}
+		doc.Set(fieldName, parsed)
 	}
 
 	/* these transformations from the original script facilitate the vis_tsvb_aggs and other TSVB-related runtime fields
@@ -216,14 +213,18 @@ func deserializeSubPaths(doc objx.Map) (map[string]interface{}, error) {
 	  }
 	*/
 
-	return doc, nil
+	return nil
 }
 
 // Report information about a visualization saved object (unmarshalled JSON)
 // Supports maps, saved searches, Lens, Vega, and legacy visualizations
 func DescribeVisualizationSavedObject(doc map[string]interface{}) (VisualizationDescriptor, error) {
 	doc = objx.New(doc)
-	deserializeSubPaths(doc)
+	err := deserializeSubPaths(doc)
+
+	if err != nil {
+		return VisualizationDescriptor{}, fmt.Errorf("failed to deserialize embedded JSON objects: %w", err)
+	}
 
 	soType := doc["type"].(string)
 
