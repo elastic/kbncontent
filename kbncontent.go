@@ -8,13 +8,10 @@
 package kbncontent
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"strings"
 
-	// TODO - consider fully replacing jsonpath with objx
-	"github.com/PaesslerAG/jsonpath"
 	"github.com/stretchr/objx"
 )
 
@@ -212,41 +209,56 @@ func DescribeVisualizationSavedObject(doc map[string]interface{}) (Visualization
 }
 
 // Given a dashboard state (unmarshalled JSON), report information about the by-value panels
-func DescribeByValueDashboardPanels(panelsJSON interface{}) (visDescriptions []VisualizationDescriptor, err error) {
-	var panels []interface{}
-	switch panelsJSON.(type) {
-	case string:
-		err := json.Unmarshal([]byte(panelsJSON.(string)), &panels)
+func DescribeByValueDashboardPanels(dashboard interface{}) (visDescriptions []VisualizationDescriptor, err error) {
+	var panelsValue *objx.Value
+	if dashboardMap, ok := dashboard.(map[string]interface{}); ok {
+		panelsValue = objx.Map(dashboardMap).Get("attributes.panelsJSON")
+	} else {
+		return nil, fmt.Errorf("dashboard of unexpected type %T", dashboard)
+	}
+
+	var panels []objx.Map
+	if panelsValue.IsStr() {
+		m, err := objx.FromJSON(panelsValue.Str())
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse panels JSON: %w", err)
 		}
-	case []interface{}:
-		panels = panelsJSON.([]interface{})
-	}
-	for _, panel := range panels {
-		panelTypeJSON, err := jsonpath.Get("$.type", panel)
 
-		if err != nil {
+		if !m.Value().IsObjxMapSlice() {
+			return nil, errors.New("expected array for panels JSON")
+		}
+
+		panels = m.Value().ObjxMapSlice()
+	} else if panelsValue.IsObjxMapSlice() {
+		panels = panelsValue.ObjxMapSlice()
+	} else {
+		return nil, fmt.Errorf("panelsJSON is of unexpected type %T. Expected string or map[string]interface{}", err)
+	}
+
+	for _, panel := range panels {
+		panelTypeValue := panel.Get("type")
+		if !panelTypeValue.IsStr() {
 			// no type, so by-reference
 			continue
 		}
 
-		panelType := panelTypeJSON.(string)
+		panelType := panelTypeValue.Str()
 
 		// TODO - I ported these checks from JS, but I do not understand why they are necessary
 		// also, note that this logic needs to change to support saved searches whenever they become by-value
 		filterOut := true
-		if _, err := jsonpath.Get("$.embeddableConfig.savedVis", panel); err == nil && panelType == "visualization" {
+
+		if panel.Has("embeddableConfig.savedVis") && panelType == "visualization" {
 			filterOut = false
 		}
 
-		if _, err := jsonpath.Get("$.embeddableConfig.attributes", panel); err == nil && panelType == "lens" || panelType == "map" {
+		if panel.Has("embeddableConfig.attributes") && (panelType == "lens" || panelType == "map") {
 			filterOut = false
 		}
 
 		if !filterOut {
 			desc := VisualizationDescriptor{
-				Doc:    panel.(map[string]interface{}),
+				Doc:    panel,
 				SoType: panelType,
 				Link:   "by_value",
 			}
