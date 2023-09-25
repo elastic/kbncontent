@@ -83,11 +83,17 @@ func (v VisualizationDescriptor) Editor() string {
 }
 
 // whether the visualization is considered legacy
-// legacy visualizations should not be used an will be
+// legacy visualizations should not be used and will be
 // removed from Kibana in the future
 func (v VisualizationDescriptor) IsLegacy() bool {
 	if v.SoType != "visualization" {
 		return false
+	}
+
+	if v.isTSVB() {
+		// TSVB markdown is not marked as legacy because
+		// we don't yet have a good replacement
+		return v.TSVBType() != "markdown"
 	}
 
 	switch v.Type() {
