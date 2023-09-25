@@ -24,63 +24,58 @@ type VisualizationDescriptor struct {
 	Doc    map[string]interface{}
 	SoType string
 	Link   string
-
-	// root-level visualization type
-	// currently empty for Lens
-	Type string
-
-	// TSVB visualizations are always type "metrics"
-	// this property gives the TSVB sub type (gauge, markdown, etc)
-	TSVBType string
-
-	// meant to be a visualization-editor-agnostic name for what
-	// kind of visualization this actually is (pie, bar, etc)
-	// Note: does not yet support Lens
-	SemanticType string
-
-	// name of the visualization editor
-	Editor string
-
-	Title    string
-	IsLegacy bool
 }
 
-func isLegacy(soType, visType string) bool {
-	if soType != "visualization" {
-		return false
+func (v VisualizationDescriptor) tryDocumentPaths(paths []string) string {
+	m := objx.Map(v.Doc)
+
+	for _, path := range paths {
+		if m.Get(path).IsStr() {
+			return m.Get(path).Str()
+		}
 	}
 
-	switch visType {
-	case "markdown", "vega":
-		return false
-	default:
-		return true
-	}
+	return ""
 }
 
-func getVisEditor(soType, visType string) string {
-	if soType == "lens" {
+// root-level visualization type
+// currently empty for Lens
+func (v VisualizationDescriptor) Type() string {
+	if v.SoType != "visualization" {
+		return ""
+	}
+
+	return v.tryDocumentPaths([]string{
+		"attributes.type",
+		"attributes.visState.type",
+		"embeddableConfig.savedVis.type", // by-value dashboard panel
+	})
+}
+
+// name of the visualization editor
+func (v VisualizationDescriptor) Editor() string {
+	if v.SoType == "lens" {
 		return "Lens"
 	}
 
-	if soType == "map" {
+	if v.SoType == "map" {
 		return "Maps"
 	}
 
-	if soType == "search" {
+	if v.SoType == "search" {
 		return "Discover"
 	}
 
-	if soType == "visualization" {
-		if visType == "metrics" {
+	if v.SoType == "visualization" {
+		if v.Type() == "metrics" {
 			return "TSVB"
 		}
 
-		if visType == "vega" {
+		if v.Type() == "vega" {
 			return "Vega"
 		}
 
-		if visType == "timelion" {
+		if v.Type() == "timelion" {
 			return "Timelion"
 		}
 
@@ -90,102 +85,69 @@ func getVisEditor(soType, visType string) string {
 	return "Unknown"
 }
 
-func getVisType(doc interface{}, soType string) (string, error) {
-	if soType != "visualization" {
-		return "", nil
+// whether the visualization is considered legacy
+// legacy visualizations should not be used an will be
+// removed from Kibana in the future
+func (v VisualizationDescriptor) IsLegacy() bool {
+	if v.SoType != "visualization" {
+		return false
 	}
 
-	if attrType, err := jsonpath.Get("$.attributes.type", doc); err == nil {
-		return attrType.(string), nil
+	switch v.Type() {
+	case "markdown", "vega":
+		return false
+	default:
+		return true
 	}
-
-	if visStateType, err := jsonpath.Get("$.attributes.visState.type", doc); err == nil {
-		return visStateType.(string), nil
-	}
-
-	// by-value dashboard case
-	if embeddableType, err := jsonpath.Get("$.embeddableConfig.savedVis.type", doc); err == nil {
-		return embeddableType.(string), nil
-	}
-
-	return "", nil
 }
 
-func isTSVB(visType string) bool {
-	return visType == "metrics"
+func (v VisualizationDescriptor) isTSVB() bool {
+	return v.Type() == "metrics"
 }
 
-func getTSVBType(doc interface{}, visType string) (string, error) {
-	if !isTSVB(visType) {
-		return "", nil
-	}
-
-	// saved object case
-	if result, err := jsonpath.Get("$.attributes.visState.params.type", doc); err == nil {
-		return result.(string), nil
-	}
-
-	// by-value dashboard panel case
-	if result, err := jsonpath.Get("$.embeddableConfig.savedVis.params.type", doc); err == nil {
-		return result.(string), nil
-	}
-
-	return "", nil
-}
-
-func getVisTitle(doc interface{}, soType string) (string, error) {
-	if soType != "visualization" {
-		return "", nil
-	}
-
-	if title, err := jsonpath.Get("$.attributes.title", doc); err == nil {
-		return title.(string), nil
-	}
-
-	if title, err := jsonpath.Get("$.title", doc); err == nil {
-		return title.(string), nil
-	}
-
-	// by-value dashboard case
-	if title, err := jsonpath.Get("$.embeddableConfig.savedVis.title", doc); err == nil {
-		return title.(string), nil
-	}
-
-	return "", nil
-}
-
-// Attaches domain knowledge as well as information from within the document
-func attachMetaInfo(desc *VisualizationDescriptor) {
-	if result, err := getVisType(desc.Doc, desc.SoType); err == nil {
-		desc.Type = result
-	}
-
-	if result, err := getVisTitle(desc.Doc, desc.SoType); err == nil {
-		desc.Title = result
-	}
-
-	if result, err := getTSVBType(desc.Doc, desc.Type); err == nil {
-		desc.TSVBType = result
-	}
-
-	if isTSVB(desc.Type) {
-		desc.SemanticType = desc.TSVBType
+// meant to be a visualization-editor-agnostic name for what
+// kind of visualization this actually is (pie, bar, etc)
+// Note: does not yet support Lens
+func (v VisualizationDescriptor) SemanticType() string {
+	if v.isTSVB() {
+		return v.TSVBType()
 	} else {
-		desc.SemanticType = desc.Type
+		return v.Type()
+	}
+}
+
+// TSVB visualizations are always type "metrics"
+// this property gives the TSVB sub type (gauge, markdown, etc)
+func (v VisualizationDescriptor) TSVBType() string {
+	if !v.isTSVB() {
+		return ""
 	}
 
-	desc.Editor = getVisEditor(desc.SoType, desc.Type)
+	return v.tryDocumentPaths([]string{
+		"attributes.visState.params.type",
+		"embeddableConfig.savedVis.params.type", // by-value dashboard panel
+	})
+}
 
-	desc.IsLegacy = isLegacy(desc.SoType, desc.Type)
+func (v VisualizationDescriptor) Title() string {
+	if v.SoType != "visualization" {
+		return ""
+	}
+
+	return v.tryDocumentPaths([]string{
+		"attributes.title",
+		"title",
+		"embeddableConfig.savedVis.title", // by-value dashboard panel
+	})
 }
 
 func deserializeSubPaths(doc objx.Map) error {
-	jsonFields := []string{
+	jsonPaths := []string{
 		"attributes.uiStateJSON",
 		"attributes.visState",
 		"attributes.kibanaSavedObjectMeta.searchSourceJSON",
 	}
-	for _, fieldName := range jsonFields {
+	for _, fieldName := range jsonPaths {
 		field := doc.Get(fieldName)
 		if !field.IsStr() {
 			continue
@@ -246,8 +208,6 @@ func DescribeVisualizationSavedObject(doc map[string]interface{}) (Visualization
 		Link:   "by_reference",
 	}
 
-	attachMetaInfo(&desc)
-
 	return desc, nil
 }
 
@@ -290,7 +250,6 @@ func DescribeByValueDashboardPanels(panelsJSON interface{}) (visDescriptions []V
 				SoType: panelType,
 				Link:   "by_value",
 			}
-			attachMetaInfo(&desc)
 			visDescriptions = append(visDescriptions, desc)
 		}
 	}
