@@ -225,16 +225,12 @@ func DescribeByValueDashboardPanels(dashboard interface{}) (visDescriptions []Vi
 
 	var panels []objx.Map
 	if panelsValue.IsStr() {
-		m, err := objx.FromJSON(panelsValue.Str())
+		result, err := objx.FromJSONSlice(panelsValue.Str())
 		if err != nil {
 			return nil, fmt.Errorf("failed to parse panels JSON: %w", err)
 		}
 
-		if !m.Value().IsObjxMapSlice() {
-			return nil, errors.New("expected array for panels JSON")
-		}
-
-		panels = m.Value().ObjxMapSlice()
+		panels = result
 	} else if panelsValue.IsObjxMapSlice() {
 		panels = panelsValue.ObjxMapSlice()
 	} else {
