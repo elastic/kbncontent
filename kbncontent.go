@@ -46,7 +46,16 @@ type VisualizationDescriptor struct {
 }
 
 func isLegacy(soType, visType string) bool {
-	return soType == "visualization" && visType != "markdown" && visType != "input_control_vis" && visType != "vega"
+	if soType != "visualization" {
+		return false
+	}
+
+	switch visType {
+	case "markdown", "vega":
+		return false
+	default:
+		return true
+	}
 }
 
 func getVisEditor(soType, visType string) string {
