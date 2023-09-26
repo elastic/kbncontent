@@ -51,34 +51,25 @@ func (v VisualizationDescriptor) Type() string {
 
 // Editor returns the name of the visualization editor
 func (v VisualizationDescriptor) Editor() string {
-	if v.SavedObjectType == "lens" {
+	switch v.SoType {
+	case "lens":
 		return "Lens"
-	}
-
-	if v.SavedObjectType == "map" {
+	case "map":
 		return "Maps"
-	}
-
-	if v.SavedObjectType == "search" {
+	case "search":
 		return "Discover"
-	}
-
-	if v.SavedObjectType == "visualization" {
-		if v.Type() == "metrics" {
+	case "visualization":
+		switch v.Type() {
+		case "metrics":
 			return "TSVB"
-		}
-
-		if v.Type() == "vega" {
+		case "vega":
 			return "Vega"
-		}
-
-		if v.Type() == "timelion" {
+		case "timelion":
 			return "Timelion"
+		default:
+			return "Aggs-based"
 		}
-
-		return "Aggs-based"
 	}
-
 	return "Unknown"
 }
 
