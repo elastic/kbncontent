@@ -273,7 +273,7 @@ func GetDashboardTitle(dashboard interface{}) (string, error) {
 	return m.Get("attributes.title").Str(), nil
 }
 
-// A dashboard reference
+// Reference is a dashboard reference
 type Reference struct {
 	ID, Type, Name string
 }
