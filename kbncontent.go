@@ -15,12 +15,12 @@ import (
 	"github.com/stretchr/objx"
 )
 
-// Describes a visualization.
+// VisualizationDescriptor describes a visualization.
 // In this case, "visualization" means anything which can be embedded in a dashboard.
 type VisualizationDescriptor struct {
-	Doc    map[string]interface{}
+	Doc             map[string]interface{}
 	SavedObjectType string
-	Link   string
+	Link            string
 }
 
 func (v VisualizationDescriptor) findDocumentPathsAsString(paths []string) string {
@@ -35,7 +35,7 @@ func (v VisualizationDescriptor) findDocumentPathsAsString(paths []string) strin
 	return ""
 }
 
-// root-level visualization type
+// Type returns the root-level visualization type
 // currently empty for Lens
 func (v VisualizationDescriptor) Type() string {
 	if v.SavedObjectType != "visualization" {
@@ -49,7 +49,7 @@ func (v VisualizationDescriptor) Type() string {
 	})
 }
 
-// name of the visualization editor
+// Editor returns the name of the visualization editor
 func (v VisualizationDescriptor) Editor() string {
 	if v.SavedObjectType == "lens" {
 		return "Lens"
@@ -82,7 +82,7 @@ func (v VisualizationDescriptor) Editor() string {
 	return "Unknown"
 }
 
-// whether the visualization is considered legacy
+// IsLegacy returns whether the visualization is considered legacy
 // legacy visualizations should not be used and will be
 // removed from Kibana in the future
 func (v VisualizationDescriptor) IsLegacy() bool {
@@ -108,7 +108,7 @@ func (v VisualizationDescriptor) isTSVB() bool {
 	return v.Type() == "metrics"
 }
 
-// meant to be a visualization-editor-agnostic name for what
+// SemanticType is meant to be a visualization-editor-agnostic name for what
 // kind of visualization this actually is (pie, bar, etc)
 // Note: does not yet support Lens
 func (v VisualizationDescriptor) SemanticType() string {
@@ -119,8 +119,8 @@ func (v VisualizationDescriptor) SemanticType() string {
 	}
 }
 
-// TSVB visualizations are always type "metrics"
-// this property gives the TSVB sub type (gauge, markdown, etc)
+// TSVBType returns the TSVB sub type (gauge, markdown, etc)
+// TSVB visualizations are always Type "metrics"
 func (v VisualizationDescriptor) TSVBType() string {
 	if !v.isTSVB() {
 		return ""
@@ -132,6 +132,7 @@ func (v VisualizationDescriptor) TSVBType() string {
 	})
 }
 
+// Title returns the visualization title
 func (v VisualizationDescriptor) Title() string {
 	if v.SavedObjectType != "visualization" {
 		return ""
@@ -190,7 +191,7 @@ func deserializeSubPaths(doc objx.Map) error {
 	return nil
 }
 
-// Report information about a visualization saved object (unmarshalled JSON)
+// DescribeVisualizationSavedObject reports information about a visualization saved object (unmarshalled JSON)
 // Supports maps, saved searches, Lens, Vega, and legacy visualizations
 func DescribeVisualizationSavedObject(doc map[string]interface{}) (VisualizationDescriptor, error) {
 	doc = objx.New(doc)
@@ -206,15 +207,16 @@ func DescribeVisualizationSavedObject(doc map[string]interface{}) (Visualization
 	}
 
 	desc := VisualizationDescriptor{
-		Doc:    doc,
+		Doc:             doc,
 		SavedObjectType: soType,
-		Link:   "by_reference",
+		Link:            "by_reference",
 	}
 
 	return desc, nil
 }
 
-// Given a dashboard state (unmarshalled JSON), report information about the by-value panels
+// DescribeByValueDashboardPanels reports information about the by-value panels given
+// dashboard state (unmarshalled JSON)
 func DescribeByValueDashboardPanels(dashboard interface{}) (visDescriptions []VisualizationDescriptor, err error) {
 	var panelsValue *objx.Value
 	if dashboardMap, ok := dashboard.(map[string]interface{}); ok {
@@ -260,9 +262,9 @@ func DescribeByValueDashboardPanels(dashboard interface{}) (visDescriptions []Vi
 
 		if !filterOut {
 			desc := VisualizationDescriptor{
-				Doc:    panel,
+				Doc:             panel,
 				SavedObjectType: panelType,
-				Link:   "by_value",
+				Link:            "by_value",
 			}
 			visDescriptions = append(visDescriptions, desc)
 		}
@@ -271,7 +273,11 @@ func DescribeByValueDashboardPanels(dashboard interface{}) (visDescriptions []Vi
 }
 
 func GetDashboardTitle(dashboard interface{}) (string, error) {
-	m := objx.Map(dashboard.(map[string]interface{}))
+	dashboardMap, ok := dashboard.(map[string]interface{})
+	if !ok {
+		return "", fmt.Errorf("dashboard of unexpected type: %T. Expected map[string]interface{}", dashboard)
+	}
+	m := objx.Map(dashboardMap)
 	return m.Get("attributes.title").Str(), nil
 }
 
@@ -302,6 +308,7 @@ func toReferenceSlice(val interface{}) ([]Reference, error) {
 	return refs, nil
 }
 
+// GetByReferencePanelIDs returns IDs of saved objects that compose the by-ref panels of the dashboard
 func GetByReferencePanelIDs(dashboard interface{}) ([]string, error) {
 	allReferences, err := toReferenceSlice(dashboard.(map[string]interface{})["references"])
 
