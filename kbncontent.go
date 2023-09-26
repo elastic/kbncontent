@@ -19,7 +19,7 @@ import (
 // In this case, "visualization" means anything which can be embedded in a dashboard.
 type VisualizationDescriptor struct {
 	Doc    map[string]interface{}
-	SoType string
+	SavedObjectType string
 	Link   string
 }
 
@@ -38,7 +38,7 @@ func (v VisualizationDescriptor) findDocumentPathsAsString(paths []string) strin
 // root-level visualization type
 // currently empty for Lens
 func (v VisualizationDescriptor) Type() string {
-	if v.SoType != "visualization" {
+	if v.SavedObjectType != "visualization" {
 		return ""
 	}
 
@@ -51,19 +51,19 @@ func (v VisualizationDescriptor) Type() string {
 
 // name of the visualization editor
 func (v VisualizationDescriptor) Editor() string {
-	if v.SoType == "lens" {
+	if v.SavedObjectType == "lens" {
 		return "Lens"
 	}
 
-	if v.SoType == "map" {
+	if v.SavedObjectType == "map" {
 		return "Maps"
 	}
 
-	if v.SoType == "search" {
+	if v.SavedObjectType == "search" {
 		return "Discover"
 	}
 
-	if v.SoType == "visualization" {
+	if v.SavedObjectType == "visualization" {
 		if v.Type() == "metrics" {
 			return "TSVB"
 		}
@@ -86,7 +86,7 @@ func (v VisualizationDescriptor) Editor() string {
 // legacy visualizations should not be used and will be
 // removed from Kibana in the future
 func (v VisualizationDescriptor) IsLegacy() bool {
-	if v.SoType != "visualization" {
+	if v.SavedObjectType != "visualization" {
 		return false
 	}
 
@@ -133,7 +133,7 @@ func (v VisualizationDescriptor) TSVBType() string {
 }
 
 func (v VisualizationDescriptor) Title() string {
-	if v.SoType != "visualization" {
+	if v.SavedObjectType != "visualization" {
 		return ""
 	}
 
@@ -207,7 +207,7 @@ func DescribeVisualizationSavedObject(doc map[string]interface{}) (Visualization
 
 	desc := VisualizationDescriptor{
 		Doc:    doc,
-		SoType: soType,
+		SavedObjectType: soType,
 		Link:   "by_reference",
 	}
 
@@ -261,7 +261,7 @@ func DescribeByValueDashboardPanels(dashboard interface{}) (visDescriptions []Vi
 		if !filterOut {
 			desc := VisualizationDescriptor{
 				Doc:    panel,
-				SoType: panelType,
+				SavedObjectType: panelType,
 				Link:   "by_value",
 			}
 			visDescriptions = append(visDescriptions, desc)
