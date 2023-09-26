@@ -12,6 +12,7 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/mitchellh/mapstructure"
 	"github.com/stretchr/objx"
 )
 
@@ -51,7 +52,7 @@ func (v VisualizationDescriptor) Type() string {
 
 // Editor returns the name of the visualization editor
 func (v VisualizationDescriptor) Editor() string {
-	switch v.SoType {
+	switch v.SavedObjectType {
 	case "lens":
 		return "Lens"
 	case "map":
@@ -284,14 +285,10 @@ func toReferenceSlice(val interface{}) ([]Reference, error) {
 	}
 	var refs []Reference
 	for _, v := range vals {
-		r, ok := v.(map[string]interface{})
-		if !ok {
-			return nil, errors.New("conversion error to reference element")
-		}
-		ref := Reference{
-			ID:   r["id"].(string),
-			Type: r["type"].(string),
-			Name: r["name"].(string),
+		var ref Reference
+		err := mapstructure.Decode(v, &ref)
+		if err != nil {
+			return nil, fmt.Errorf("conversion errror to reference element: %w", err)
 		}
 
 		refs = append(refs, ref)
