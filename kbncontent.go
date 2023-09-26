@@ -23,7 +23,7 @@ type VisualizationDescriptor struct {
 	Link   string
 }
 
-func (v VisualizationDescriptor) tryDocumentPaths(paths []string) string {
+func (v VisualizationDescriptor) findDocumentPathsAsString(paths []string) string {
 	m := objx.Map(v.Doc)
 
 	for _, path := range paths {
@@ -42,7 +42,7 @@ func (v VisualizationDescriptor) Type() string {
 		return ""
 	}
 
-	return v.tryDocumentPaths([]string{
+	return v.findDocumentPathsAsString([]string{
 		"attributes.type",
 		"attributes.visState.type",
 		"embeddableConfig.savedVis.type", // by-value dashboard panel
@@ -126,7 +126,7 @@ func (v VisualizationDescriptor) TSVBType() string {
 		return ""
 	}
 
-	return v.tryDocumentPaths([]string{
+	return v.findDocumentPathsAsString([]string{
 		"attributes.visState.params.type",
 		"embeddableConfig.savedVis.params.type", // by-value dashboard panel
 	})
@@ -137,7 +137,7 @@ func (v VisualizationDescriptor) Title() string {
 		return ""
 	}
 
-	return v.tryDocumentPaths([]string{
+	return v.findDocumentPathsAsString([]string{
 		"attributes.title",
 		"title",
 		"embeddableConfig.savedVis.title", // by-value dashboard panel
