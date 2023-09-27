@@ -53,15 +53,21 @@ func TestDescribeByValueDashboardPanels(t *testing.T) {
 
 	assert.Equal(t, len(descriptions), 15, "The number of panels should be correct")
 	for i, desc := range descriptions {
+		title := desc.Title()
+		var editor string
+		if result, err := desc.Editor(); err == nil {
+			editor = result
+		}
+
 		// Properties
-		assert.Equalf(t, desc.Link, "by_value", "Link should be \"by_value\" in \"%s\" (%s)", desc.Title(), desc.Editor())
-		assert.Equalf(t, desc.SavedObjectType, expected[i].soType, "SavedObjectType should match expected in \"%s\" (%s)", desc.Title(), desc.Editor())
+		assert.Equalf(t, desc.Link, "by_value", "Link should be \"by_value\" in \"%s\" (%s)", title, editor)
+		assert.Equalf(t, desc.SavedObjectType, expected[i].soType, "SavedObjectType should match expected in \"%s\" (%s)", title, editor)
 
 		// Methods
-		assert.Equalf(t, desc.Title(), expected[i].title, "Title() should match expected in \"%s\" (%s)")
-		assert.Equalf(t, desc.Editor(), expected[i].editor, "Editor() should match expected in \"%s\" (%s)")
-		assert.Equalf(t, desc.IsLegacy(), expected[i].legacy, "IsLegacy() should match expected in \"%s\" (%s)", desc.Title(), desc.Editor())
-		assert.Equalf(t, desc.Type(), expected[i].visType, "Type() should match expected in \"%s\" (%s)", desc.Title(), desc.Editor())
-		assert.Equalf(t, desc.TSVBType(), expected[i].tsvbType, "TSVBType() should match expected in \"%s\" (%s)", desc.Title(), desc.Editor())
+		assert.Equalf(t, title, expected[i].title, "Title() should match expected in \"%s\" (%s)")
+		assert.Equalf(t, editor, expected[i].editor, "Editor() should match expected in \"%s\" (%s)")
+		assert.Equalf(t, desc.IsLegacy(), expected[i].legacy, "IsLegacy() should match expected in \"%s\" (%s)", title, editor)
+		assert.Equalf(t, desc.Type(), expected[i].visType, "Type() should match expected in \"%s\" (%s)", title, editor)
+		assert.Equalf(t, desc.TSVBType(), expected[i].tsvbType, "TSVBType() should match expected in \"%s\" (%s)", title, editor)
 	}
 }

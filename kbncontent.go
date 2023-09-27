@@ -51,27 +51,27 @@ func (v VisualizationDescriptor) Type() string {
 }
 
 // Editor returns the name of the visualization editor
-func (v VisualizationDescriptor) Editor() string {
+func (v VisualizationDescriptor) Editor() (string, error) {
 	switch v.SavedObjectType {
 	case "lens":
-		return "Lens"
+		return "Lens", nil
 	case "map":
-		return "Maps"
+		return "Maps", nil
 	case "search":
-		return "Discover"
+		return "Discover", nil
 	case "visualization":
 		switch v.Type() {
 		case "metrics":
-			return "TSVB"
+			return "TSVB", nil
 		case "vega":
-			return "Vega"
+			return "Vega", nil
 		case "timelion":
-			return "Timelion"
+			return "Timelion", nil
 		default:
-			return "Aggs-based"
+			return "Aggs-based", nil
 		}
 	}
-	return "Unknown"
+	return "", errors.New("Unknown editor type")
 }
 
 // IsLegacy returns whether the visualization is considered legacy
