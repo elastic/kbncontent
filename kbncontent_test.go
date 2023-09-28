@@ -17,7 +17,7 @@ func TestDescribeByValueDashboardPanels(t *testing.T) {
 		visType  string
 		tsvbType string
 	}{
-		{title: "Legacy input control vis", editor: "Aggs-based", legacy: true, soType: "visualization", visType: "input_control_vis", tsvbType: ""},
+		{title: "Legacy input control vis", editor: "Aggs-based", legacy: false, soType: "visualization", visType: "input_control_vis", tsvbType: ""},
 		{title: "", editor: "Aggs-based", legacy: false, soType: "visualization", visType: "markdown", tsvbType: ""},
 		{title: "", editor: "Lens", legacy: false, soType: "lens", visType: "", tsvbType: ""},
 		{title: "Vega time series", editor: "Vega", legacy: false, soType: "visualization", visType: "vega", tsvbType: ""},

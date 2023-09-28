@@ -89,7 +89,7 @@ func (v VisualizationDescriptor) IsLegacy() bool {
 	}
 
 	switch v.Type() {
-	case "markdown", "vega":
+	case "markdown", "vega", "input_control_vis":
 		return false
 	default:
 		return true
