@@ -111,6 +111,46 @@ func (v VisualizationDescriptor) SemanticType() string {
 	}
 }
 
+// CanUseFilter returns true if the visualization makes queries.
+func (v VisualizationDescriptor) CanUseFilter() bool {
+	switch v.SavedObjectType {
+	case "search":
+		return false
+	case "visualization":
+		if v.isTSVB() {
+			switch v.TSVBType() {
+			case "markdown":
+				return false
+			}
+		} else {
+			switch v.Type() {
+			case "markdown":
+				return false
+			}
+
+		}
+	}
+
+	return true
+}
+
+// HasFilters returns true if the dashboard has defined filters.
+func (v VisualizationDescriptor) HasFilters() bool {
+	m := objx.Map(v.Doc)
+
+	query := m.Get("embeddableConfig.attributes.state.query.query")
+	if query.IsStr() && query.Str() != "" {
+		return true
+	}
+
+	filters := m.Get("embeddableConfig.attributes.state.filters")
+	if filters.IsObjxMapSlice() && len(filters.ObjxMapSlice()) > 0 {
+		return true
+	}
+
+	return false
+}
+
 // TSVBType returns the TSVB sub type (gauge, markdown, etc)
 // TSVB visualizations are always Type "metrics"
 func (v VisualizationDescriptor) TSVBType() string {
