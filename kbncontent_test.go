@@ -24,7 +24,7 @@ func TestDescribeByValueDashboardPanels(t *testing.T) {
 		{title: "", editor: "Lens", legacy: false, soType: "lens", visType: "", tsvbType: "", makesQueries: true},
 		{title: "Vega time series", editor: "Vega", legacy: false, soType: "visualization", visType: "vega", tsvbType: "", makesQueries: true},
 		{title: "", editor: "Maps", legacy: false, soType: "map", visType: "", tsvbType: "", makesQueries: true},
-		{title: "TSVB Markdown", editor: "TSVB", legacy: false, soType: "visualization", visType: "metrics", tsvbType: "markdown"},
+		{title: "TSVB Markdown", editor: "TSVB", legacy: false, soType: "visualization", visType: "metrics", tsvbType: "markdown", makesQueries: true},
 		{title: "", editor: "Aggs-based", legacy: false, soType: "visualization", visType: "markdown", tsvbType: ""},
 		{title: "", editor: "Aggs-based", legacy: false, soType: "visualization", visType: "markdown", tsvbType: ""},
 		{title: "TSVB time series", editor: "TSVB", legacy: true, soType: "visualization", visType: "metrics", tsvbType: "timeseries", makesQueries: true},

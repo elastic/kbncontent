@@ -117,35 +117,44 @@ func (v VisualizationDescriptor) CanUseFilter() bool {
 	case "search":
 		return false
 	case "visualization":
-		if v.isTSVB() {
-			switch v.TSVBType() {
-			case "markdown":
-				return false
-			}
-		} else {
-			switch v.Type() {
-			case "markdown":
-				return false
-			}
-
+		switch v.Type() {
+		case "markdown":
+			return false
 		}
 	}
 
 	return true
 }
 
-// HasFilters returns true if the dashboard has defined filters.
+// HasFilters returns true if the visualization has defined filters.
 func (v VisualizationDescriptor) HasFilters() bool {
 	m := objx.Map(v.Doc)
+	deserializeSubPaths(m)
 
-	query := m.Get("embeddableConfig.attributes.state.query.query")
-	if query.IsStr() && query.Str() != "" {
-		return true
+	queryPaths := []string{
+		"attributes.kibanaSavedObjectMeta.searchSourceJSON.query.query",
+		"attributes.state.query.query",
+		"embeddableConfig.attributes.state.query.query",
+		"embeddableConfig.savedVis.data.searchSource.query.query",
+	}
+	for _, path := range queryPaths {
+		query := m.Get(path)
+		if query.IsStr() && query.Str() != "" {
+			return true
+		}
 	}
 
-	filters := m.Get("embeddableConfig.attributes.state.filters")
-	if filters.IsObjxMapSlice() && len(filters.ObjxMapSlice()) > 0 {
-		return true
+	filterPaths := []string{
+		"attributes.state.filters",
+		"embeddableConfig.attributes.state.filters",
+		"embeddableConfig.savedVis.data.searchSource.filter",
+		"attributes.kibanaSavedObjectMeta.searchSourceJSON.filter",
+	}
+	for _, path := range filterPaths {
+		filters := m.Get(path)
+		if filters.IsObjxMapSlice() && len(filters.ObjxMapSlice()) > 0 {
+			return true
+		}
 	}
 
 	return false
