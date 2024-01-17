@@ -10,28 +10,30 @@ import (
 
 func TestDescribeByValueDashboardPanels(t *testing.T) {
 	expected := []struct {
-		title    string
-		editor   string
-		legacy   bool
-		soType   string
-		visType  string
-		tsvbType string
+		title        string
+		editor       string
+		legacy       bool
+		soType       string
+		visType      string
+		tsvbType     string
+		makesQueries bool
+		hasFilters   bool
 	}{
-		{title: "Legacy input control vis", editor: "Aggs-based", legacy: false, soType: "visualization", visType: "input_control_vis", tsvbType: ""},
+		{title: "Legacy input control vis", editor: "Aggs-based", legacy: false, soType: "visualization", visType: "input_control_vis", tsvbType: "", makesQueries: true},
 		{title: "", editor: "Aggs-based", legacy: false, soType: "visualization", visType: "markdown", tsvbType: ""},
-		{title: "", editor: "Lens", legacy: false, soType: "lens", visType: "", tsvbType: ""},
-		{title: "Vega time series", editor: "Vega", legacy: false, soType: "visualization", visType: "vega", tsvbType: ""},
-		{title: "", editor: "Maps", legacy: false, soType: "map", visType: "", tsvbType: ""},
-		{title: "TSVB Markdown", editor: "TSVB", legacy: false, soType: "visualization", visType: "metrics", tsvbType: "markdown"},
+		{title: "", editor: "Lens", legacy: false, soType: "lens", visType: "", tsvbType: "", makesQueries: true},
+		{title: "Vega time series", editor: "Vega", legacy: false, soType: "visualization", visType: "vega", tsvbType: "", makesQueries: true},
+		{title: "", editor: "Maps", legacy: false, soType: "map", visType: "", tsvbType: "", makesQueries: true},
+		{title: "TSVB Markdown", editor: "TSVB", legacy: false, soType: "visualization", visType: "metrics", tsvbType: "markdown", makesQueries: true},
 		{title: "", editor: "Aggs-based", legacy: false, soType: "visualization", visType: "markdown", tsvbType: ""},
 		{title: "", editor: "Aggs-based", legacy: false, soType: "visualization", visType: "markdown", tsvbType: ""},
-		{title: "TSVB time series", editor: "TSVB", legacy: true, soType: "visualization", visType: "metrics", tsvbType: "timeseries"},
-		{title: "TSVB gauge", editor: "TSVB", legacy: true, soType: "visualization", visType: "metrics", tsvbType: "gauge"},
+		{title: "TSVB time series", editor: "TSVB", legacy: true, soType: "visualization", visType: "metrics", tsvbType: "timeseries", makesQueries: true},
+		{title: "TSVB gauge", editor: "TSVB", legacy: true, soType: "visualization", visType: "metrics", tsvbType: "gauge", makesQueries: true, hasFilters: true},
 		{title: "", editor: "Aggs-based", legacy: false, soType: "visualization", visType: "markdown", tsvbType: ""},
-		{title: "Aggs-based table", editor: "Aggs-based", legacy: true, soType: "visualization", visType: "table", tsvbType: ""},
-		{title: "Aggs-based tag cloud", editor: "Aggs-based", legacy: true, soType: "visualization", visType: "tagcloud", tsvbType: ""},
-		{title: "", editor: "Aggs-based", legacy: true, soType: "visualization", visType: "heatmap", tsvbType: ""},
-		{title: "Timelion time series", editor: "Timelion", legacy: true, soType: "visualization", visType: "timelion", tsvbType: ""},
+		{title: "Aggs-based table", editor: "Aggs-based", legacy: true, soType: "visualization", visType: "table", tsvbType: "", makesQueries: true},
+		{title: "Aggs-based tag cloud", editor: "Aggs-based", legacy: true, soType: "visualization", visType: "tagcloud", tsvbType: "", makesQueries: true},
+		{title: "", editor: "Aggs-based", legacy: true, soType: "visualization", visType: "heatmap", tsvbType: "", makesQueries: true},
+		{title: "Timelion time series", editor: "Timelion", legacy: true, soType: "visualization", visType: "timelion", tsvbType: "", makesQueries: true},
 	}
 
 	content, err := ioutil.ReadFile("./testdata/dashboard.json")
@@ -64,10 +66,15 @@ func TestDescribeByValueDashboardPanels(t *testing.T) {
 		assert.Equalf(t, desc.SavedObjectType, expected[i].soType, "SavedObjectType should match expected in \"%s\" (%s)", title, editor)
 
 		// Methods
-		assert.Equalf(t, title, expected[i].title, "Title() should match expected in \"%s\" (%s)")
-		assert.Equalf(t, editor, expected[i].editor, "Editor() should match expected in \"%s\" (%s)")
-		assert.Equalf(t, desc.IsLegacy(), expected[i].legacy, "IsLegacy() should match expected in \"%s\" (%s)", title, editor)
-		assert.Equalf(t, desc.Type(), expected[i].visType, "Type() should match expected in \"%s\" (%s)", title, editor)
-		assert.Equalf(t, desc.TSVBType(), expected[i].tsvbType, "TSVBType() should match expected in \"%s\" (%s)", title, editor)
+		assert.Equalf(t, expected[i].title, title, "Title() should match expected in \"%s\" (%s)")
+		assert.Equalf(t, expected[i].editor, editor, "Editor() should match expected in \"%s\" (%s)")
+		assert.Equalf(t, expected[i].legacy, desc.IsLegacy(), "IsLegacy() should match expected in \"%s\" (%s)", title, editor)
+		assert.Equalf(t, expected[i].visType, desc.Type(), "Type() should match expected in \"%s\" (%s)", title, editor)
+		assert.Equalf(t, expected[i].tsvbType, desc.TSVBType(), "TSVBType() should match expected in \"%s\" (%s)", title, editor)
+		assert.Equal(t, expected[i].makesQueries, desc.CanUseFilter(), "MakesQueries() should match expected in \"%s\" (%s)", title, editor)
+		hasFilters, err := desc.HasFilters()
+		if assert.NoError(t, err) {
+			assert.Equal(t, expected[i].hasFilters, hasFilters, "HasFilters() should match expected in \"%s\" (%s)", title, editor)
+		}
 	}
 }

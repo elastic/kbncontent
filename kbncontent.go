@@ -111,6 +111,58 @@ func (v VisualizationDescriptor) SemanticType() string {
 	}
 }
 
+// CanUseFilter returns true if the visualization makes queries.
+func (v VisualizationDescriptor) CanUseFilter() bool {
+	switch v.SavedObjectType {
+	case "search":
+		return false
+	case "visualization":
+		switch v.Type() {
+		case "markdown":
+			return false
+		}
+	}
+
+	return true
+}
+
+// HasFilters returns true if the visualization has defined filters.
+func (v VisualizationDescriptor) HasFilters() (bool, error) {
+	m := objx.Map(v.Doc)
+	err := deserializeSubPaths(m)
+	if err != nil {
+		return false, err
+	}
+
+	queryPaths := []string{
+		"attributes.kibanaSavedObjectMeta.searchSourceJSON.query.query",
+		"attributes.state.query.query",
+		"embeddableConfig.attributes.state.query.query",
+		"embeddableConfig.savedVis.data.searchSource.query.query",
+	}
+	for _, path := range queryPaths {
+		query := m.Get(path)
+		if query.IsStr() && query.Str() != "" {
+			return true, nil
+		}
+	}
+
+	filterPaths := []string{
+		"attributes.state.filters",
+		"embeddableConfig.attributes.state.filters",
+		"embeddableConfig.savedVis.data.searchSource.filter",
+		"attributes.kibanaSavedObjectMeta.searchSourceJSON.filter",
+	}
+	for _, path := range filterPaths {
+		filters := m.Get(path)
+		if filters.IsObjxMapSlice() && len(filters.ObjxMapSlice()) > 0 {
+			return true, nil
+		}
+	}
+
+	return false, nil
+}
+
 // TSVBType returns the TSVB sub type (gauge, markdown, etc)
 // TSVB visualizations are always Type "metrics"
 func (v VisualizationDescriptor) TSVBType() string {
