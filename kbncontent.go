@@ -127,9 +127,12 @@ func (v VisualizationDescriptor) CanUseFilter() bool {
 }
 
 // HasFilters returns true if the visualization has defined filters.
-func (v VisualizationDescriptor) HasFilters() bool {
+func (v VisualizationDescriptor) HasFilters() (bool, error) {
 	m := objx.Map(v.Doc)
-	deserializeSubPaths(m)
+	err := deserializeSubPaths(m)
+	if err != nil {
+		return false, err
+	}
 
 	queryPaths := []string{
 		"attributes.kibanaSavedObjectMeta.searchSourceJSON.query.query",
@@ -140,7 +143,7 @@ func (v VisualizationDescriptor) HasFilters() bool {
 	for _, path := range queryPaths {
 		query := m.Get(path)
 		if query.IsStr() && query.Str() != "" {
-			return true
+			return true, nil
 		}
 	}
 
@@ -153,11 +156,11 @@ func (v VisualizationDescriptor) HasFilters() bool {
 	for _, path := range filterPaths {
 		filters := m.Get(path)
 		if filters.IsObjxMapSlice() && len(filters.ObjxMapSlice()) > 0 {
-			return true
+			return true, nil
 		}
 	}
 
-	return false
+	return false, nil
 }
 
 // TSVBType returns the TSVB sub type (gauge, markdown, etc)

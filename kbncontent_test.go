@@ -28,7 +28,7 @@ func TestDescribeByValueDashboardPanels(t *testing.T) {
 		{title: "", editor: "Aggs-based", legacy: false, soType: "visualization", visType: "markdown", tsvbType: ""},
 		{title: "", editor: "Aggs-based", legacy: false, soType: "visualization", visType: "markdown", tsvbType: ""},
 		{title: "TSVB time series", editor: "TSVB", legacy: true, soType: "visualization", visType: "metrics", tsvbType: "timeseries", makesQueries: true},
-		{title: "TSVB gauge", editor: "TSVB", legacy: true, soType: "visualization", visType: "metrics", tsvbType: "gauge", makesQueries: true},
+		{title: "TSVB gauge", editor: "TSVB", legacy: true, soType: "visualization", visType: "metrics", tsvbType: "gauge", makesQueries: true, hasFilters: true},
 		{title: "", editor: "Aggs-based", legacy: false, soType: "visualization", visType: "markdown", tsvbType: ""},
 		{title: "Aggs-based table", editor: "Aggs-based", legacy: true, soType: "visualization", visType: "table", tsvbType: "", makesQueries: true},
 		{title: "Aggs-based tag cloud", editor: "Aggs-based", legacy: true, soType: "visualization", visType: "tagcloud", tsvbType: "", makesQueries: true},
@@ -72,6 +72,9 @@ func TestDescribeByValueDashboardPanels(t *testing.T) {
 		assert.Equalf(t, expected[i].visType, desc.Type(), "Type() should match expected in \"%s\" (%s)", title, editor)
 		assert.Equalf(t, expected[i].tsvbType, desc.TSVBType(), "TSVBType() should match expected in \"%s\" (%s)", title, editor)
 		assert.Equal(t, expected[i].makesQueries, desc.CanUseFilter(), "MakesQueries() should match expected in \"%s\" (%s)", title, editor)
-		assert.Equal(t, expected[i].hasFilters, desc.HasFilters(), "MakesQueries() should match expected in \"%s\" (%s)", title, editor)
+		hasFilters, err := desc.HasFilters()
+		if assert.NoError(t, err) {
+			assert.Equal(t, expected[i].hasFilters, hasFilters, "HasFilters() should match expected in \"%s\" (%s)", title, editor)
+		}
 	}
 }
