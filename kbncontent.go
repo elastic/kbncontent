@@ -28,7 +28,7 @@ func (v VisualizationDescriptor) findDocumentPathsAsString(paths []string) strin
 	m := objx.Map(v.Doc)
 
 	for _, path := range paths {
-		if m.Get(path).IsStr() {
+		if m.Get(path).IsStr() && m.Get(path).Str() != "" {
 			return m.Get(path).Str()
 		}
 	}
@@ -137,6 +137,7 @@ func (v VisualizationDescriptor) HasFilters() (bool, error) {
 	queryPaths := []string{
 		"attributes.kibanaSavedObjectMeta.searchSourceJSON.query.query",
 		"attributes.state.query.query",
+		"embeddableConfig.attributes.mapStateJSON.query.query",
 		"embeddableConfig.attributes.state.query.query",
 		"embeddableConfig.savedVis.data.searchSource.query.query",
 	}
@@ -150,6 +151,7 @@ func (v VisualizationDescriptor) HasFilters() (bool, error) {
 	filterPaths := []string{
 		"attributes.state.filters",
 		"embeddableConfig.attributes.state.filters",
+		"embeddableConfig.attributes.mapStateJSON.filters",
 		"embeddableConfig.savedVis.data.searchSource.filter",
 		"attributes.kibanaSavedObjectMeta.searchSourceJSON.filter",
 	}
@@ -178,10 +180,6 @@ func (v VisualizationDescriptor) TSVBType() string {
 
 // Title returns the visualization title
 func (v VisualizationDescriptor) Title() string {
-	if v.SavedObjectType != "visualization" {
-		return ""
-	}
-
 	return v.findDocumentPathsAsString([]string{
 		"attributes.title",
 		"title",
@@ -191,9 +189,14 @@ func (v VisualizationDescriptor) Title() string {
 
 func deserializeSubPaths(doc objx.Map) error {
 	jsonPaths := []string{
+		"attributes.kibanaSavedObjectMeta.searchSourceJSON",
+		"attributes.mapStateJSON",
 		"attributes.uiStateJSON",
 		"attributes.visState",
-		"attributes.kibanaSavedObjectMeta.searchSourceJSON",
+		"embeddableConfig.attributes.kibanaSavedObjectMeta.searchSourceJSON",
+		"embeddableConfig.attributes.mapStateJSON",
+		"embeddableConfig.attributes.uiStateJSON",
+		"embeddableConfig.attributes.visState",
 	}
 	for _, fieldName := range jsonPaths {
 		field := doc.Get(fieldName)
@@ -201,6 +204,22 @@ func deserializeSubPaths(doc objx.Map) error {
 			continue
 		}
 		parsed, err := objx.FromJSON(field.Str())
+		if err != nil {
+			return fmt.Errorf("failed to decode embedded json in %q: %w", fieldName, err)
+		}
+		doc.Set(fieldName, parsed)
+	}
+
+	jsonSlicePaths := []string{
+		"attributes.layerListJSON",
+		"embeddableConfig.attributes.layerListJSON",
+	}
+	for _, fieldName := range jsonSlicePaths {
+		field := doc.Get(fieldName)
+		if !field.IsStr() {
+			continue
+		}
+		parsed, err := objx.FromJSONSlice(field.Str())
 		if err != nil {
 			return fmt.Errorf("failed to decode embedded json in %q: %w", fieldName, err)
 		}
