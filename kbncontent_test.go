@@ -21,7 +21,7 @@ func TestDescribeByValueDashboardPanels(t *testing.T) {
 	}{
 		{title: "Legacy input control vis", editor: "Aggs-based", legacy: false, soType: "visualization", visType: "input_control_vis", tsvbType: "", makesQueries: true},
 		{title: "", editor: "Aggs-based", legacy: false, soType: "visualization", visType: "markdown", tsvbType: ""},
-		{title: "", editor: "Lens", legacy: false, soType: "lens", visType: "", tsvbType: "", makesQueries: true},
+		{title: "Lens bar", editor: "Lens", legacy: false, soType: "lens", visType: "", tsvbType: "", makesQueries: true},
 		{title: "Vega time series", editor: "Vega", legacy: false, soType: "visualization", visType: "vega", tsvbType: "", makesQueries: true},
 		{title: "", editor: "Maps", legacy: false, soType: "map", visType: "", tsvbType: "", makesQueries: true},
 		{title: "TSVB Markdown", editor: "TSVB", legacy: false, soType: "visualization", visType: "metrics", tsvbType: "markdown", makesQueries: true},
@@ -34,6 +34,8 @@ func TestDescribeByValueDashboardPanels(t *testing.T) {
 		{title: "Aggs-based tag cloud", editor: "Aggs-based", legacy: true, soType: "visualization", visType: "tagcloud", tsvbType: "", makesQueries: true},
 		{title: "", editor: "Aggs-based", legacy: true, soType: "visualization", visType: "heatmap", tsvbType: "", makesQueries: true},
 		{title: "Timelion time series", editor: "Timelion", legacy: true, soType: "visualization", visType: "timelion", tsvbType: "", makesQueries: true},
+		{title: "Unique IPs map", editor: "Maps", legacy: false, soType: "map", visType: "", tsvbType: "", makesQueries: true, hasFilters: true},
+		{title: "Unique IPs map encoded", editor: "Maps", legacy: false, soType: "map", visType: "", tsvbType: "", makesQueries: true, hasFilters: true},
 	}
 
 	content, err := ioutil.ReadFile("./testdata/dashboard.json")
@@ -48,12 +50,11 @@ func TestDescribeByValueDashboardPanels(t *testing.T) {
 	}
 
 	descriptions, err := DescribeByValueDashboardPanels(dashboard)
-
 	if err != nil {
 		t.Fatalf("Encountered error during subject execution: %v", err)
 	}
 
-	assert.Equal(t, len(descriptions), 15, "The number of panels should be correct")
+	assert.Equal(t, len(descriptions), 17, "The number of panels should be correct")
 	for i, desc := range descriptions {
 		title := desc.Title()
 		var editor string
