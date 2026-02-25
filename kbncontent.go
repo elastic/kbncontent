@@ -127,11 +127,24 @@ func (v VisualizationDescriptor) CanUseFilter() bool {
 }
 
 // HasFilters returns true if the visualization has defined filters.
+// ES|QL panels are considered to have filters because the ES|QL query itself
+// defines data filtering through FROM and WHERE clauses.
 func (v VisualizationDescriptor) HasFilters() (bool, error) {
 	m := objx.Map(v.Doc)
 	err := deserializeSubPaths(m)
 	if err != nil {
 		return false, err
+	}
+
+	esqlPaths := []string{
+		"embeddableConfig.attributes.state.query.esql",
+		"embeddableConfig.query.esql",
+	}
+	for _, path := range esqlPaths {
+		query := m.Get(path)
+		if query.IsStr() && query.Str() != "" {
+			return true, nil
+		}
 	}
 
 	queryPaths := []string{

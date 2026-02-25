@@ -1213,6 +1213,66 @@
                 "title": "Unique IPs map encoded",
                 "type": "map",
                 "version": "8.10.2"
+            },
+            {
+                "embeddableConfig": {
+                    "attributes": {
+                        "references": [],
+                        "state": {
+                            "adHocDataViews": {},
+                            "datasourceStates": {
+                                "textBased": {
+                                    "layers": {
+                                        "layer1": {
+                                            "columns": [
+                                                {
+                                                    "columnId": "count",
+                                                    "fieldName": "count",
+                                                    "inMetricDimension": true,
+                                                    "meta": {
+                                                        "esType": "long",
+                                                        "type": "number"
+                                                    }
+                                                }
+                                            ],
+                                            "index": "esql-index-id",
+                                            "query": {
+                                                "esql": "FROM logs-* | WHERE agent.type == \"filebeat\" | STATS count=COUNT(*)"
+                                            },
+                                            "timeField": "@timestamp"
+                                        }
+                                    }
+                                }
+                            },
+                            "filters": [],
+                            "query": {
+                                "esql": "FROM logs-* | WHERE agent.type == \"filebeat\" | STATS count=COUNT(*)"
+                            },
+                            "visualization": {
+                                "layerId": "layer1",
+                                "layerType": "data",
+                                "metricAccessor": "count"
+                            }
+                        },
+                        "title": "ES|QL metric",
+                        "visualizationType": "lnsMetric"
+                    },
+                    "filters": [],
+                    "hidePanelTitles": false,
+                    "query": {
+                        "esql": "FROM logs-* | WHERE agent.type == \"filebeat\" | STATS count=COUNT(*)"
+                    }
+                },
+                "gridData": {
+                    "h": 7,
+                    "i": "esql-panel-1",
+                    "w": 8,
+                    "x": 0,
+                    "y": 37
+                },
+                "panelIndex": "esql-panel-1",
+                "title": "ES|QL metric",
+                "type": "lens"
             }
         ],
         "timeRestore": false,

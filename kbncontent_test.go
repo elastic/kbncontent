@@ -36,6 +36,7 @@ func TestDescribeByValueDashboardPanels(t *testing.T) {
 		{title: "Timelion time series", editor: "Timelion", legacy: true, soType: "visualization", visType: "timelion", tsvbType: "", makesQueries: true},
 		{title: "Unique IPs map", editor: "Maps", legacy: false, soType: "map", visType: "", tsvbType: "", makesQueries: true, hasFilters: true},
 		{title: "Unique IPs map encoded", editor: "Maps", legacy: false, soType: "map", visType: "", tsvbType: "", makesQueries: true, hasFilters: true},
+		{title: "ES|QL metric", editor: "Lens", legacy: false, soType: "lens", visType: "", tsvbType: "", makesQueries: true, hasFilters: true},
 	}
 
 	content, err := ioutil.ReadFile("./testdata/dashboard.json")
@@ -54,7 +55,7 @@ func TestDescribeByValueDashboardPanels(t *testing.T) {
 		t.Fatalf("Encountered error during subject execution: %v", err)
 	}
 
-	assert.Equal(t, len(descriptions), 17, "The number of panels should be correct")
+	assert.Equal(t, len(descriptions), 18, "The number of panels should be correct")
 	for i, desc := range descriptions {
 		title := desc.Title()
 		var editor string
